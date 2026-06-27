@@ -47,6 +47,7 @@ backend\venv\Scripts\python backend_api\manage.py migrate
 backend\venv\Scripts\python backend_api\manage.py runserver
 ```
 or
+cd backend_api
  venv\Scripts\activate
 python manage.py runserver
 
