@@ -11,6 +11,9 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     daily_goal_ml = models.PositiveIntegerField(default=2000)
     preferred_unit = models.CharField(max_length=10, default='ml', choices=[('ml', 'Milliliters'), ('oz', 'Fluid Ounces')])
+    current_streak = models.PositiveIntegerField(default=0)
+    longest_streak = models.PositiveIntegerField(default=0)
+    total_water_consumed = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -28,7 +31,10 @@ def create_user_profile(sender, instance, created, **kwargs):
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
     """Save UserProfile when User is saved"""
-    instance.profile.save()
+    try:
+        instance.profile.save()
+    except UserProfile.DoesNotExist:
+        UserProfile.objects.create(user=instance)
 
 
 class WaterIntakeEntry(models.Model):
@@ -71,3 +77,73 @@ class Achievement(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.get_achievement_type_display()}"
+
+
+class Feedback(models.Model):
+    """User submitted feedback"""
+    STATUS_CHOICES = [
+        ('unread', 'Unread'),
+        ('pending', 'Pending'),
+        ('resolved', 'Resolved'),
+    ]
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='feedbacks')
+    subject = models.CharField(max_length=255)
+    message = models.TextField()
+    reply = models.TextField(blank=True, default='')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='unread')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Feedback from {self.user.username if self.user else 'Anonymous'} - {self.subject}"
+
+
+class Notification(models.Model):
+    """System and admin notifications sent to users"""
+    TYPE_CHOICES = [
+        ('reminder', 'Drink Water Reminder'),
+        ('maintenance', 'Maintenance Notice'),
+        ('health_tip', 'Health Tip'),
+        ('congrats', 'Congratulations'),
+        ('announcement', 'General Announcement'),
+    ]
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES)
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_notifications')
+    is_global = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.get_type_display()} - {self.title}"
+
+
+class SystemSetting(models.Model):
+    """Global system configuration settings"""
+    key = models.CharField(max_length=100, unique=True)
+    value = models.TextField()
+
+    def __str__(self):
+        return f"{self.key}: {self.value}"
+
+
+class ActivityLog(models.Model):
+    """Audit logs tracking admin and key user activities"""
+    action = models.CharField(max_length=100)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='activity_logs')
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    details = models.TextField(blank=True, default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.action} by {self.user.username if self.user else 'System'} at {self.created_at}"
+

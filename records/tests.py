@@ -24,7 +24,17 @@ class WaterIntakeEntryTests(TestCase):
         self.assertEqual(entries.count(), 1)
         self.assertEqual(entries.get().amount_ml, 750)
 
-    def test_posted_date_is_ignored_and_current_date_is_used(self):
+    def test_missing_date_defaults_to_today(self):
+        response = self.client.post(
+            '/api/entries/',
+            {'amount_ml': 300},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.data['date'], str(timezone.now().date()))
+
+    def test_posted_date_is_used_for_entry(self):
         response = self.client.post(
             '/api/entries/',
             {'date': '2000-01-01', 'amount_ml': 300},
@@ -32,4 +42,4 @@ class WaterIntakeEntryTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.data['date'], str(timezone.now().date()))
+        self.assertEqual(response.data['date'], '2000-01-01')
