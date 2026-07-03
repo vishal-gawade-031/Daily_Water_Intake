@@ -18,6 +18,7 @@ export default function Dashboard() {
   const [summary, setSummary] = useState(null)
   const [entries, setEntries] = useState([])
   const [achievements, setAchievements] = useState([])
+  const [analyticsRefreshKey, setAnalyticsRefreshKey] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -43,6 +44,7 @@ export default function Dashboard() {
 
   const handleEntryAdded = () => {
     loadDashboard()
+    setAnalyticsRefreshKey((current) => current + 1)
   }
 
   if (loading) {
@@ -110,7 +112,7 @@ export default function Dashboard() {
 
         {/* Analytics */}
         <div className="mb-8">
-          <Analytics />
+          <Analytics refreshKey={analyticsRefreshKey} />
         </div>
 
         {/* Bottom Row */}

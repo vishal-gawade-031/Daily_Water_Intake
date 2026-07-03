@@ -25,13 +25,17 @@ type AnalyticsData = {
   percentage: number
 }
 
-export default function Analytics() {
+type Props = {
+  refreshKey?: number
+}
+
+export default function Analytics({ refreshKey = 0 }: Props) {
   const [data, setData] = useState<AnalyticsData[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     loadAnalytics()
-  }, [])
+  }, [refreshKey])
 
   const loadAnalytics = async () => {
     try {

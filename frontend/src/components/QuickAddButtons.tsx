@@ -20,9 +20,11 @@ export default function QuickAddButtons({ onEntryAdded }: Props) {
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [error, setError] = useState('')
 
   const handleAddWater = async (amount: number) => {
     setLoading(true)
+    setError('')
     try {
       await axios.post(`${API_BASE}/entries/`, {
         amount_ml: amount,
@@ -32,7 +34,13 @@ export default function QuickAddButtons({ onEntryAdded }: Props) {
       setNotes('')
       onEntryAdded()
       setTimeout(() => setSuccess(false), 2000)
-    } catch (error) {
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.date?.[0] ||
+        error?.response?.data?.amount_ml?.[0] ||
+        error?.response?.data?.detail ||
+        'Failed to add water intake'
+      setError(message)
       console.error('Failed to add entry:', error)
     } finally {
       setLoading(false)
@@ -56,8 +64,18 @@ export default function QuickAddButtons({ onEntryAdded }: Props) {
     >
       <h2 className="text-2xl font-bold text-slate-900 mb-6">💧 Add Water Intake</h2>
 
-      {/* Success Message */}
+      {/* Feedback Messages */}
       <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700"
+          >
+            {error}
+          </motion.div>
+        )}
         {success && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
